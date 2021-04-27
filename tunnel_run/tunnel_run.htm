@@ -1,0 +1,205 @@
+<html>
+<style>
+body {
+  background-color: black;
+}
+</style>
+<body>
+<canvas id="myCanvas" width="800" height="600" style='position:absolute; left:0; top:0'></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const context = canvas.getContext('2d');
+context.font = 'bold 30px sans-serif';
+const image = new Image();
+image.src = "sprite.png";
+const buttons = new Image();
+buttons.src = "buttons.png";
+const spriteSize = 40,
+  jumpPixels = 40,
+  maxJump = 3,
+  maxRows = 25,
+  jumpSpeed = 0.05;
+let sprite, jump, currentJumpSpeed, counter, arrowUp, xSpeed, mode, runSpeed;
+let frame = 0;
+let grid = [];
+ 
+function resize() {
+  canvas.style.width = window.innerWidth;
+  canvas.style.height = window.innerHeight;
+}
+ 
+function tunnelCoords(point) {
+  let x = point.x;
+  let y = point.y + counter;
+  if (y < 0.9)
+    y = 0.9;
+  let x2 = (x - sprite.x) * Math.PI / 2;
+  let factor = 500 / y;
+  return ({
+    x: canvas.width / 2 + factor * Math.sin(x2 / 4),
+    y: canvas.height / 2 + factor * Math.cos(x2 / 4)
+  });
+}
+ 
+function restart() {
+  sprite = {
+    x: 0.4,
+    y: 2
+  };
+  jump = 0;
+  xSpeed = 0;
+  currentJumpSpeed = 0;
+  runSpeed = 0.005;
+  counter = 0;
+  mode = 'init';
+  for (let row = 0; row < maxRows; row++) {
+    let randomRow = [];
+    for (let column = 0; column < 16; column++) {
+      if (row < 4)
+        randomRow[column] = 1;
+      else
+        randomRow[column] = Math.floor(Math.random() * 1.5);
+    }
+    grid[row] = randomRow;
+  }
+  context.fillStyle = 'white';
+  context.fillText('Press space or touch here to start', 100, 200);
+}
+ 
+function drawTile(point1, color) {
+  if (color == 1) {
+    let point2 = {
+      x: point1.x + 1,
+      y: point1.y
+    };
+    let point3 = {
+      x: point1.x + 1,
+      y: point1.y + 1
+    };
+    let point4 = {
+      x: point1.x,
+      y: point1.y + 1
+    };
+    let tunnelP1 = tunnelCoords(point1);
+    let tunnelP2 = tunnelCoords(point2);
+    let tunnelP3 = tunnelCoords(point3);
+    let tunnelP4 = tunnelCoords(point4);
+    context.fillStyle = 'gray';
+    context.beginPath();
+    context.moveTo(tunnelP1.x, tunnelP1.y);
+    context.lineTo(tunnelP2.x, tunnelP2.y);
+    context.lineTo(tunnelP3.x, tunnelP3.y);
+    context.lineTo(tunnelP4.x, tunnelP4.y);
+    context.lineTo(tunnelP1.x, tunnelP1.y);
+    context.fill();
+  }
+}
+ 
+function animate() {
+  if (mode == 'play') {
+    sprite.x = sprite.x + xSpeed;
+    if (sprite.x < 0)
+      sprite.x = 16 + sprite.x;
+    if (sprite.x >= 16)
+      sprite.x = sprite.x - 16;
+    if (arrowUp && jump <= 0)
+      currentJumpSpeed = jumpSpeed;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (let row = Math.floor(sprite.y - 1); row < grid.length; row++)
+      for (let x = 0; x < grid[0].length; x++) {
+        drawTile({
+          x: x,
+          y: row
+        }, grid[row][x] > 0);
+      }
+    if (currentJumpSpeed) {
+      jump = jump + currentJumpSpeed;
+      if (jump >= maxJump) {
+        currentJumpSpeed = -jumpSpeed;
+      }
+      if (jump <= 0)
+        currentJumpSpeed = 0;
+    }
+    let spriteFrame;
+    if (jump > 0)
+      spriteFrame = 6;
+    else
+      spriteFrame = Math.floor(frame);
+    context.drawImage(image, spriteFrame * spriteSize, 0, spriteSize, spriteSize, (canvas.width - spriteSize) / 2, 550 - spriteSize - jump * jumpPixels, spriteSize, spriteSize);
+    let spriteTile = {
+      x: Math.floor(sprite.x),
+      y: Math.floor(sprite.y)
+    };
+    if (jump <= 0 && !grid[spriteTile.y][spriteTile.x]) {
+      restart();
+      context.fillStyle = 'white';
+      context.fillText('Game over!', 100, 100);
+      mode = 'init';
+    }
+    counter = counter - runSpeed;
+    sprite.y = sprite.y + runSpeed;
+    if (sprite.y >= maxRows) {
+      context.fillStyle = 'white';
+      context.fillText('You win!', 100, 100);
+      restart();
+      mode = 'init';
+    }
+    runSpeed = runSpeed + 0.00001;
+    frame = frame + 0.05;
+    if (frame >= 6)
+      frame = 0;
+    context.fillStyle = 'white';
+    context.fillText('Score: ' + (spriteTile.y - 2), 650, 50);
+  }
+  context.drawImage(buttons, 0, 500);
+  window.requestAnimationFrame(animate);
+}
+ 
+function handleTouch(event) {
+  if (mode == 'init') {
+    mode = 'play';
+  } else {
+    let x = event.clientX / window.innerWidth;
+    if (x < .5)
+      arrowUp = true;
+    if (x > .875)
+      xSpeed = 0.05;
+    if (x < .875 && x > .75)
+      xSpeed = -0.05;
+  }
+  event.preventDefault();
+}
+ 
+window.onkeydown = function(event) {
+  let key = event.key;
+  if (mode == 'init' && key == ' ') {
+    mode = 'play';
+  } else {
+    switch (key) {
+      case 'ArrowUp':
+        arrowUp = true;
+        break;
+      case 'ArrowRight':
+        xSpeed = 0.05;
+        break;
+      case 'ArrowLeft':
+        xSpeed = -0.05;
+    }
+  }
+};
+ 
+function handleUp() {
+  arrowUp = false;
+  xSpeed = 0;
+}
+ 
+window.onresize = resize;
+window.onkeyup = handleUp;
+window.onpointerdown = handleTouch;
+window.onpointerup = handleUp;
+resize();
+restart();
+animate();
+</script>
+</body>
+</html>
