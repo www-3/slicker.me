@@ -1,0 +1,93 @@
+<html>
+<style>
+body {
+  background-color: black;
+}
+</style>
+<body>
+<canvas id="myCanvas1" width="600" height="300" style="touch-action: none"></canvas>
+<br>
+<br>
+<canvas id="myCanvas2" width="600" height="300" style="touch-action: none"></canvas>
+<script>
+const scale = 30;
+let canvas1 = document.getElementById('myCanvas1');
+let context1 = canvas1.getContext('2d');
+let canvas2 = document.getElementById('myCanvas2');
+let context2 = canvas2.getContext('2d');
+let draw = false;
+ 
+function tunnelCoords(point) {
+  let x = point.x;
+  let y = point.y;
+  if (y < 0.9)
+    y = 0.9;
+  let x2 = x * Math.PI / 2;
+  let factor = 500 / y;
+  return ({
+    x: canvas1.width / 2 + factor * Math.sin(x2 / 4),
+    y: canvas1.height / 2 + factor * Math.cos(x2 / 4)
+  });
+}
+ 
+function handleTouch(event) {
+  if (draw) {
+    let x = event.offsetX;
+    let y = event.offsetY;
+    context1.fillRect(x, y, 10, 10);
+    let x2 = (x / scale);
+    let y2 = (y / scale);
+    let tunnelPoint = tunnelCoords({
+      x: x2,
+      y: y2
+    });
+    context2.fillRect(tunnelPoint.x, tunnelPoint.y, 2, 2);
+  }
+}
+ 
+function redraw() {
+  context1.fillStyle = 'gray';
+  context2.fillStyle = 'gray';
+  context1.fillRect(0, 0, canvas1.width, canvas1.height);
+  context2.fillRect(0, 0, canvas2.width, canvas2.height);
+  context1.fillStyle = 'white';
+  context2.fillStyle = 'white';
+  for (let y = 0; y < 12; y++) {
+    let color = 255 - 20 * y;
+    context1.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+    context2.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+    context1.beginPath();
+    context2.beginPath();
+    let point = tunnelCoords({
+      x: 0,
+      y: y
+    });
+    context1.moveTo(0, y * scale);
+    context2.moveTo(point.x, point.y);
+    for (let x = 0; x < 15; x++) {
+      let point = tunnelCoords({
+        x: x,
+        y: y
+      });
+      context1.lineTo(x * scale, y * scale);
+      context1.fillText(x + ',' + y, x * scale, y * scale);
+      context2.lineTo(point.x, point.y);
+      context2.fillText(x + ',' + y, point.x, point.y);
+    }
+    context1.stroke();
+    context2.stroke();
+  }
+}
+ 
+window.onload = redraw;
+canvas2.onclick = redraw;
+canvas1.onpointerdown = function() {
+  draw = true;
+};
+canvas1.onpointermove = handleTouch;
+window.onpointerup = function() {
+  draw = false;
+};
+</script>
+</body>
+</html>
