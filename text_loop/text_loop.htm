@@ -1,0 +1,29 @@
+<html>
+<body bgcolor='black'>
+<canvas id="myCanvas" width="600" height="400"></canvas>
+<script>
+let canvas = document.getElementById("myCanvas");
+let context = canvas.getContext("2d");
+context.shadowBlur = 20;
+let counter = 0;
+let text = 'Loading........';
+ 
+function animate() {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < text.length; i++) {
+    let counter2 = counter / 10 + i;
+    let x = canvas.width / 2 + 200 * Math.sin(counter2 / (Math.PI * 1.2));
+    let y = canvas.height / 2 + 160 * Math.cos(counter2 / (Math.PI * 8));
+    let color = `rgb(${Math.floor(x / 2)}, 0, ${Math.floor(y)})`;
+    context.fillStyle = color;
+    context.shadowColor = color;
+    context.font = 'bold ' + x / 10 + 'px sans-serif';
+    context.fillText(text.charAt(i), x, y);
+  }
+  counter++;
+  window.requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
